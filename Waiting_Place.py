@@ -61,7 +61,7 @@ class Doctor_Place(object):
         self.Busy_times = [[],[],[],[]]
 
         if GENERATE:
-            patients = self.__generate_schedule(prob_or_patients)
+            patients = self.__generate_schedule(prob_or_patients,'first_half')
         else:
             patients = prob_or_patients
         self.Schedule = patients    
@@ -93,16 +93,26 @@ class Doctor_Place(object):
     def add_walkin(self, patient):
         self.walkin.put(patient)
 
-    def __generate_schedule(self, p):
+    def __generate_schedule(self, p, policy):
+        policy = H.POLICY
         patients = []
         i = 0
-        # while i < 60:
-        #     patients.append(Patient(self.env, arrive_time=i, schedule=True))
-        #     i += H.SLOT
-
         while i < H.EARLY_T:
-            if H.Generator.Bernoulli(p):
-                patients.append(Patient(self.env, arrive_time=i, schedule=True))
+            if policy == 'random':
+                if H.Generator.Bernoulli(p):
+                    patients.append(Patient(self.env, arrive_time=i, schedule=True))      
+            elif policy == 'first_slots':
+                if i < H.EARLY_T / 2:
+                    patients.append(Patient(self.env, arrive_time=i, schedule=True))
+            elif policy == 'first_half':
+                if i % 60 < 30:
+                    patients.append(Patient(self.env, arrive_time=i, schedule=True))
+            elif policy == 'adaptive':
+                time = i // 60 +1
+                if (i % 60) < (65-5*2*time):
+                    patients.append(Patient(self.env, arrive_time=i, schedule=True))
+            elif policy == 'human':
+                pass
             i += H.SLOT
         return patients
         

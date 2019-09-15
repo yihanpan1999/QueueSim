@@ -32,6 +32,7 @@ args = parser.parse_args()
 
 # ---------------------------------------- GLOBAL VARIABLE ------------------------------------------------
 DIGITS = 5      
+POLICY    = args.dataroot
 SLOT      = args.slot_time         
 SIM_END   = args.sim_end + 180     # ALLOWED MAXIMUM CLOSE TIMEPOINT  Max overtime is 180min
 WORK_TIME = args.sim_end
