@@ -60,11 +60,11 @@ class Doctor(object):
         Doctor.ID_generate += 1
         self.trans_prob = trans_prob
         self.env = env
-        self.realization = np.zeros(int(env.sim_end/5)) #11*60*1/5
+        self.realization = np.zeros(int(np.ceil(env.sim_end/H.SLOT)), dtype=int) #11*60*1/5
         
     def work(self, patient):
         # [1 schedule 2 walkin 3 schedule-R 4 walkin-R]
-        slot = int(self.env.now_step // 5)
+        slot = int(self.env.now_step // H.SLOT)
         # print('Service Begin',self.env.now_step)
         if not patient.isRevisit():
             self.realization[slot] = 1 if patient.schedule == True else 3
@@ -95,6 +95,8 @@ class Doctor(object):
                 L.append(i+1)
         return L
             
-    def idle_cost(self):
-        num = np.sum(self.realization==0)
-        return num
+    def cost(self):
+        idx = H.WORK_END // H.SLOT
+        idle = np.sum(self.realization[:idx]==0) * H.SLOT
+        overtime = np.max(np.nonzero(self.realization)[0][-1] * H.SLOT + H.SLOT - H.WORK_END, 0)
+        return idle, overtime

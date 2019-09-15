@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
-parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
+parser.add_argument('--dataroot',           type = str,   default = 'adaptive')  
 
 parser.add_argument('--mc',                 type = int,   default = 200)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
 parser.add_argument('--num_check',          type = int,   default = 2)          # NUMBER OF CHECK ITEMS
 parser.add_argument('--close_time',         type = int,   default = 6)          # ALLOWED TIME PERIOD FOR NEW PATIENTS (hrs)
 parser.add_argument('--slot_time',          type = int,   default = 5)          # TIME DURATION (5 MINS) OF ONE SLOT (mins)
-parser.add_argument('--sim_end',            type = int,   default = 11*60)      # ONE DAY SERVICE TIME (mins)
+parser.add_argument('--sim_end',            type = int,   default = 8*60)      # ONE DAY SERVICE TIME (mins)
  
 parser.add_argument('--p_showup',           type = float, default = 0.5)        # 30/72 ALL SLOTS ARE OCCUPIRED BY SCHEDULED PEOPLE
 parser.add_argument('--walk_in_rate',       type = float, default = 4/60)       # 4 PATIENT  / 60 MINUTES FOR WALK INS
@@ -34,8 +34,8 @@ args = parser.parse_args()
 DIGITS = 5      
 POLICY    = args.dataroot
 SLOT      = args.slot_time         
-SIM_END   = args.sim_end + 180     # ALLOWED MAXIMUM CLOSE TIMEPOINT  Max overtime is 180min
-WORK_TIME = args.sim_end
+SIM_END   = args.sim_end * 2     # ALLOWED MAXIMUM CLOSE TIMEPOINT  Max overtime is 180min
+WORK_END = args.sim_end
 SIM_CLOSE = args.sim_end - 60  # IDEAL CLOSE TIMEPOINT
 EARLY_T   = args.close_time*60 
 
@@ -82,6 +82,8 @@ BLOOD_UTIL = []
 SCAN_UTIL = []
 # -------------------- #
 WASTE = [[[],[],[],[]],[[],[],[],[]]]
+IDLE_COST = []
+OVERTIME_COST= []
 
 # ---------------------------------------- Util functions ------------------------------------------------
 
@@ -89,11 +91,13 @@ def mkdir_ifmiss(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+TEST = []
 def discretetize(x,y):
     # x = [0, 28.306141030249545, 43.30614103024955, 45, ...
     # y = [0, 1,                  2,                 1, 0, 1, 2, ...
     slot = [[] for _ in range(SIM_END//5)] # 0-10, 10-20, ... , 650-660, 660-670, 670-680
     slot_final = [0 for _ in range(SIM_END//5)]
+    TEST.append(x[-1])
     for i in range(len(x)):
         x_step = x[i]
         idx = int(x_step // 5)

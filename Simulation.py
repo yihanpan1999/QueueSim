@@ -55,14 +55,14 @@ class Simulation(object):
         H.SCAN_SERVED += sim.waiting_place[2].Served_time
         
     def run(self):
-
+        revisit_count = 0
         while self.now_step < H.SIM_END:
             self.now_step, type, id = self.next()
             
             if self.now_step >= H.SIM_END: 
                 break
 
-            patient = self.waiting_place[type].send_patient_4() # policy 2: balance walk-in and revisit queue
+            patient = self.waiting_place[type].send_patient() # policy 2: balance walk-in and revisit queue
 
             before_State = patient.isRevisit() 
             patient = self.net[type][id].work(patient)
@@ -78,7 +78,8 @@ class Simulation(object):
                         TO = 0 # GO DOCTOR
                         if patient.time[0, -1] == self.net[0][0].id: 
                             last = self.argmax_report_time(patient)
-                            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient.time[last, 3])
+                            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient.time[last, 3])#revisit_count)#
+                            revisit_count += 1
                             patient.time[-1, 0] = patient.policy(patient.scheduled_revisit_time, patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
                             self.waiting_place[TO].add_patient(patient, True)
                         else: 
@@ -87,6 +88,9 @@ class Simulation(object):
                     TO = patient.checklist.pop(0)
                     patient.time[TO, 0] = patient.time[type, 2] + self.walk_time[type, TO]
                     self.waiting_place[TO].add_patient(patient)
+        doctor_cost = self.net[0][0].cost()
+        H.IDLE_COST.append(doctor_cost[0])
+        H.OVERTIME_COST.append(doctor_cost[1])
             
     def next(self):
         type, id = None, None
@@ -111,7 +115,11 @@ class Simulation(object):
         return idx
 
     def scheduled_revisit_time(self, check_end_time):
-        return check_end_time + 30
+        # t = check_end_time
+        t = min(check_end_time + 60, H.EARLY_T+30)
+        # t = H.EARLY_T + check_end_time*H.SLOT
+        # t = check_end_time//60+30
+        return t
 
 if __name__ == "__main__":
     data_root = args.dataroot
@@ -128,7 +136,7 @@ if __name__ == "__main__":
 
     fig, axs = plt.subplots(1,1, figsize=(20, 5))
     plt.plot(sim.net[0][0].realization,'co')
-    plt.ylim(0.8,4.2)
+    plt.ylim(-0.2,4.2)
     plt.yticks(np.array([0,1,2,3,4]), ('idle','Scheduled','Scheduled(Re)', 'Walk-In',  'Walk-In(Re)'), fontsize=18)
     plt.savefig(data_root+'/realization_day1.png')
     plt.close()
@@ -189,8 +197,11 @@ if __name__ == "__main__":
 
     H.utility_measure_mc(sim,mc,data_root)
 
-    print([round(np.mean(lst),3) for lst in H.WASTE[0]])
-    print([len(lst)/mc for lst in H.WASTE[0]])
+    print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]])
+    print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]])
 
-    print([round(np.mean(lst),3) for lst in H.WASTE[1]])
-    print([len(lst)/mc for lst in H.WASTE[1]])
+    print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]])
+    print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]])
+
+    print("idle cost", np.mean(np.array(H.IDLE_COST)), end=' ')
+    print("overtime cost", np.mean(np.array(H.OVERTIME_COST)))

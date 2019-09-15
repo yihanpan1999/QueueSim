@@ -37,7 +37,7 @@ class Waiting_Place(object):
         else:
             return max(self.WaitingQ.queue[0][0], self.env.now_step)
         
-    def send_patient_4(self):
+    def send_patient(self):
         if self.WaitingQ.empty() or self.WaitingQ.queue[0][0] > self.env.now_step:
             return None
         else:
@@ -219,8 +219,8 @@ class Doctor_Place(object):
                 return None, None  
 
 
-
-    def send_patient_3(self):  #one walkin, one revisit
+    #one walkin, one revisit
+    def send_patient_3(self):  
         if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:
             assert self.WaitingQ.queue[0][0] == self.env.now_step
             patient = self.WaitingQ.get()[1]
@@ -278,8 +278,8 @@ class Doctor_Place(object):
 
 
 
-
-    def send_patient_4(self):   #first serve revisit, when walkin line >= 4, serve walkin
+    #first serve revisit, when walkin line >= 8, serve walkin
+    def send_patient_4(self):   
         if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:
             assert self.WaitingQ.queue[0][0] == self.env.now_step
             patient = self.WaitingQ.get()[1]
