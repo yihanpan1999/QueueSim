@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
-parser.add_argument('--dataroot',           type = str,   default = 'adaptive')  
+parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
 
 parser.add_argument('--mc',                 type = int,   default = 200)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
@@ -173,7 +173,8 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
     walk_in_all_times = walk_in_times + walk_in_served_times
     revisit_all_times = revisit_times + revisit_served_times
     y = [0]
-    for time in sorted(walk_in_all_times):
+    a = sorted(list(set(revisit_all_times)))
+    for time in a:
         if time in walk_in_times and time in walk_in_served_times:
             y.append(y[-1])
         elif time in walk_in_times:
@@ -181,10 +182,11 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
         elif time in walk_in_served_times:
             y.append(y[-1]-1)  
     y.append(y[-1])
-    xy = [0]+sorted(walk_in_all_times)+[max_time]
+    xy = [0]+a+[max_time]
 
     z = [0]
-    for time in sorted(revisit_all_times):
+    aa = sorted(list(set(revisit_all_times)))
+    for time in aa:
         if time in revisit_times and time in revisit_served_times:
             incre = len([t for t in revisit_times if t == time]) - len([t for t in revisit_served_times if t == time])
             z.append(z[-1]+incre)
@@ -192,13 +194,8 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
             z.append(z[-1]+1)
         elif time in revisit_served_times:
             z.append(z[-1]-1)     
-        if z[-1] < 0:
-            print('negative z')
-            pdb.set_trace()
     z.append(z[-1])
-
-    xz = [0]+sorted(revisit_all_times)+[max_time]
-
+    xz = [0]+aa+[max_time]
     return xy,y,xz,z
     
 def get_service_queue(arrival_times, served_times):
