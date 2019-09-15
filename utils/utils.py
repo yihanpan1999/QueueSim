@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
-parser.add_argument('--dataroot',           type = str,   default = 'params1')  
+parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
 
 parser.add_argument('--mc',                 type = int,   default = 200)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED

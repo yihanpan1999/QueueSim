@@ -61,7 +61,7 @@ class Doctor_Place(object):
         self.Busy_times = [[],[],[],[]]
 
         if GENERATE:
-            patients = self.__generate_schedule(prob_or_patients,'first_half')
+            patients = self.__generate_schedule(prob_or_patients,H.POLICY)
         else:
             patients = prob_or_patients
         self.Schedule = patients    
