@@ -186,12 +186,17 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
     z = [0]
     for time in sorted(revisit_all_times):
         if time in revisit_times and time in revisit_served_times:
-            z.append(z[-1])
+            incre = len([t for t in revisit_times if t == time]) - len([t for t in revisit_served_times if t == time])
+            z.append(z[-1]+incre)
         elif time in revisit_times:
             z.append(z[-1]+1)
         elif time in revisit_served_times:
             z.append(z[-1]-1)     
+        if z[-1] < 0:
+            print('negative z')
+            pdb.set_trace()
     z.append(z[-1])
+
     xz = [0]+sorted(revisit_all_times)+[max_time]
 
     return xy,y,xz,z
