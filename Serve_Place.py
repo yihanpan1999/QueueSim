@@ -77,6 +77,7 @@ class Doctor(object):
             patient.check_list = patient.checklist.copy()
             self.env.Save[self.service_type].append(patient)
             patient.revisit = True
+            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient)
         else:
             self.realization[slot] = 2 if patient.schedule == True else 4
             # print('Revisit',patient.schedule, patient.id, patient.time[0,2])
@@ -87,6 +88,14 @@ class Doctor(object):
             self.env.Save[self.service_type].append(patient)
         # print(slot, self.realization[slot])
         return patient
+
+    def scheduled_revisit_time(self, patient):
+        # t = check_end_time
+        # t = min(check_end_time + 60, H.EARLY_T+30)
+        # t = H.EARLY_T + check_end_time*H.SLOT
+        # t = check_end_time//60+30
+        t = self.finish_time + H.riDELAY
+        return t
     
     def __check_list(self):
         L = []

@@ -55,7 +55,6 @@ class Simulation(object):
         H.SCAN_SERVED += sim.waiting_place[2].Served_time
         
     def run(self):
-        revisit_count = 0
         while self.now_step < H.SIM_END:
             self.now_step, type, id = self.next()
             
@@ -78,9 +77,7 @@ class Simulation(object):
                         TO = 0 # GO DOCTOR
                         if patient.time[0, -1] == self.net[0][0].id: 
                             last = self.argmax_report_time(patient)
-                            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient.time[last, 3])#revisit_count)#
-                            revisit_count += 1
-                            patient.time[-1, 0] = patient.policy(patient.scheduled_revisit_time, patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
+                            patient.time[-1, 0] = patient.policy(patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
                             self.waiting_place[TO].add_patient(patient, True)
                         else: 
                             TO = 2000 # GO OTHER DOCTOR
@@ -114,12 +111,7 @@ class Simulation(object):
         assert M >= 0
         return idx
 
-    def scheduled_revisit_time(self, check_end_time):
-        # t = check_end_time
-        t = min(check_end_time + 60, H.EARLY_T+30)
-        # t = H.EARLY_T + check_end_time*H.SLOT
-        # t = check_end_time//60+30
-        return t
+
 
 if __name__ == "__main__":
     data_root = args.dataroot
@@ -136,6 +128,12 @@ if __name__ == "__main__":
 
     fig, axs = plt.subplots(1,1, figsize=(20, 5))
     plt.plot(sim.net[0][0].realization,'co')
+    plt.plot(H.WORK_END/H.SLOT, 0.5,'ro')
+    plt.plot(H.EARLY_T/H.SLOT, 0.5,'ro')
+    work_during = np.mean(np.array(H.OVERTIME_COST))+H.WORK_END
+    xlim = (0,200)
+    plt.plot((work_during)/H.SLOT, 0.5,'ro')
+    plt.xlim(xlim)
     plt.ylim(-0.2,4.2)
     plt.yticks(np.array([0,1,2,3,4]), ('idle','Scheduled','Scheduled(Re)', 'Walk-In',  'Walk-In(Re)'), fontsize=18)
     plt.savefig(data_root+'/realization_day1.png')
@@ -181,16 +179,19 @@ if __name__ == "__main__":
 
     plt.plot(walkin_queue.mean(axis=1).tolist())
     plt.plot(revisit_queue.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['walkin queue', 'revisit queue'], loc='upper left')
     plt.savefig(data_root+'/plot_MC{}.png'.format(mc))
     plt.close()
 
     plt.plot(queue1.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['Blood queue'], loc='upper left')
     plt.savefig(data_root+'/plot-blood-MC{}.png'.format(mc))
     plt.close()
 
     plt.plot(queue2.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['Scan queue'], loc='upper left')
     plt.savefig(data_root+'/plot-scan-MC{}.png'.format(mc))
     plt.close()

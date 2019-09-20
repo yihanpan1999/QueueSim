@@ -34,7 +34,7 @@ args = parser.parse_args()
 DIGITS = 5      
 POLICY    = args.dataroot
 SLOT      = args.slot_time         
-SIM_END   = args.sim_end * 2     # ALLOWED MAXIMUM CLOSE TIMEPOINT  Max overtime is 180min
+SIM_END   = args.sim_end * 4     # ALLOWED MAXIMUM CLOSE TIMEPOINT  
 WORK_END = args.sim_end
 SIM_CLOSE = args.sim_end - 60  # IDEAL CLOSE TIMEPOINT
 EARLY_T   = args.close_time*60 
@@ -42,6 +42,9 @@ EARLY_T   = args.close_time*60
 NUM_CHECK = 2         
 NUM_STEP = NUM_CHECK + 2 
 walk_time = 2*np.ones([NUM_CHECK+1,NUM_CHECK+1])
+
+# r_i
+riDELAY = 90
 
         
 # -------------------------------------------------------------------------------------------------------
@@ -173,7 +176,7 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
     walk_in_all_times = walk_in_times + walk_in_served_times
     revisit_all_times = revisit_times + revisit_served_times
     y = [0]
-    a = sorted(list(set(revisit_all_times)))
+    a = sorted(list(set(walk_in_all_times)))
     for time in a:
         if time in walk_in_times and time in walk_in_served_times:
             y.append(y[-1])
