@@ -7,13 +7,15 @@ plt.style.use('ggplot')
 
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
 parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
+parser.add_argument('--policy',           type = int,   default = 1)  
+parser.add_argument('--ri',           type = float,   default = 60)  
 
-parser.add_argument('--mc',                 type = int,   default = 200)         # NUMBER OF DAYS
+parser.add_argument('--mc',                 type = int,   default = 100)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
 parser.add_argument('--num_check',          type = int,   default = 2)          # NUMBER OF CHECK ITEMS
 parser.add_argument('--close_time',         type = int,   default = 6)          # ALLOWED TIME PERIOD FOR NEW PATIENTS (hrs)
 parser.add_argument('--slot_time',          type = int,   default = 5)          # TIME DURATION (5 MINS) OF ONE SLOT (mins)
-parser.add_argument('--sim_end',            type = int,   default = 11*60)      # ONE DAY SERVICE TIME (mins)
+parser.add_argument('--sim_end',            type = int,   default = 8*60)      # ONE DAY SERVICE TIME (mins)
  
 parser.add_argument('--p_showup',           type = float, default = 0.5)        # 30/72 ALL SLOTS ARE OCCUPIRED BY SCHEDULED PEOPLE
 parser.add_argument('--walk_in_rate',       type = float, default = 4/60)       # 4 PATIENT  / 60 MINUTES FOR WALK INS
@@ -34,14 +36,17 @@ args = parser.parse_args()
 DIGITS = 5      
 POLICY    = args.dataroot
 SLOT      = args.slot_time         
-SIM_END   = args.sim_end + 180     # ALLOWED MAXIMUM CLOSE TIMEPOINT  Max overtime is 180min
-WORK_TIME = args.sim_end
+SIM_END   = args.sim_end * 4     # ALLOWED MAXIMUM CLOSE TIMEPOINT  
+WORK_END = args.sim_end
 SIM_CLOSE = args.sim_end - 60  # IDEAL CLOSE TIMEPOINT
 EARLY_T   = args.close_time*60 
 
 NUM_CHECK = 2         
 NUM_STEP = NUM_CHECK + 2 
 walk_time = 2*np.ones([NUM_CHECK+1,NUM_CHECK+1])
+
+# r_i
+riDELAY = args.ri
 
         
 # -------------------------------------------------------------------------------------------------------
@@ -82,6 +87,8 @@ BLOOD_UTIL = []
 SCAN_UTIL = []
 # -------------------- #
 WASTE = [[[],[],[],[]],[[],[],[],[]]]
+IDLE_COST = []
+OVERTIME_COST= []
 
 # ---------------------------------------- Util functions ------------------------------------------------
 
@@ -89,11 +96,13 @@ def mkdir_ifmiss(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+TEST = []
 def discretetize(x,y):
     # x = [0, 28.306141030249545, 43.30614103024955, 45, ...
     # y = [0, 1,                  2,                 1, 0, 1, 2, ...
     slot = [[] for _ in range(SIM_END//5)] # 0-10, 10-20, ... , 650-660, 660-670, 670-680
     slot_final = [0 for _ in range(SIM_END//5)]
+    TEST.append(x[-1])
     for i in range(len(x)):
         x_step = x[i]
         idx = int(x_step // 5)
@@ -169,7 +178,8 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
     walk_in_all_times = walk_in_times + walk_in_served_times
     revisit_all_times = revisit_times + revisit_served_times
     y = [0]
-    for time in sorted(walk_in_all_times):
+    a = sorted(list(set(walk_in_all_times)))
+    for time in a:
         if time in walk_in_times and time in walk_in_served_times:
             y.append(y[-1])
         elif time in walk_in_times:
@@ -177,19 +187,20 @@ def get_doctor_queue(walk_in_times, walk_in_served_times, revisit_times, revisit
         elif time in walk_in_served_times:
             y.append(y[-1]-1)  
     y.append(y[-1])
-    xy = [0]+sorted(walk_in_all_times)+[max_time]
+    xy = [0]+a+[max_time]
 
     z = [0]
-    for time in sorted(revisit_all_times):
+    aa = sorted(list(set(revisit_all_times)))
+    for time in aa:
         if time in revisit_times and time in revisit_served_times:
-            z.append(z[-1])
+            incre = len([t for t in revisit_times if t == time]) - len([t for t in revisit_served_times if t == time])
+            z.append(z[-1]+incre)
         elif time in revisit_times:
             z.append(z[-1]+1)
         elif time in revisit_served_times:
             z.append(z[-1]-1)     
     z.append(z[-1])
-    xz = [0]+sorted(revisit_all_times)+[max_time]
-
+    xz = [0]+aa+[max_time]
     return xy,y,xz,z
     
 def get_service_queue(arrival_times, served_times):

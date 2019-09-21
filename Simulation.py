@@ -55,14 +55,13 @@ class Simulation(object):
         H.SCAN_SERVED += sim.waiting_place[2].Served_time
         
     def run(self):
-
         while self.now_step < H.SIM_END:
             self.now_step, type, id = self.next()
             
             if self.now_step >= H.SIM_END: 
                 break
 
-            patient = self.waiting_place[type].send_patient_4() # policy 2: balance walk-in and revisit queue
+            patient = self.waiting_place[type].send_patient() # policy 2: balance walk-in and revisit queue
 
             before_State = patient.isRevisit() 
             patient = self.net[type][id].work(patient)
@@ -78,8 +77,7 @@ class Simulation(object):
                         TO = 0 # GO DOCTOR
                         if patient.time[0, -1] == self.net[0][0].id: 
                             last = self.argmax_report_time(patient)
-                            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient.time[last, 3])
-                            patient.time[-1, 0] = patient.policy(patient.scheduled_revisit_time, patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
+                            patient.time[-1, 0] = patient.policy(patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
                             self.waiting_place[TO].add_patient(patient, True)
                         else: 
                             TO = 2000 # GO OTHER DOCTOR
@@ -87,6 +85,9 @@ class Simulation(object):
                     TO = patient.checklist.pop(0)
                     patient.time[TO, 0] = patient.time[type, 2] + self.walk_time[type, TO]
                     self.waiting_place[TO].add_patient(patient)
+        doctor_cost = self.net[0][0].cost()
+        H.IDLE_COST.append(doctor_cost[0])
+        H.OVERTIME_COST.append(doctor_cost[1])
             
     def next(self):
         type, id = None, None
@@ -110,11 +111,10 @@ class Simulation(object):
         assert M >= 0
         return idx
 
-    def scheduled_revisit_time(self, check_end_time):
-        return check_end_time + 30
+
 
 if __name__ == "__main__":
-    data_root = args.dataroot
+    data_root = "{}_{}_{}".format(args.dataroot, args.policy, args.ri)
     mkdir_ifmiss(data_root)
 
     # +++++++++++++++++++++++++++++++++++++++
@@ -128,7 +128,13 @@ if __name__ == "__main__":
 
     fig, axs = plt.subplots(1,1, figsize=(20, 5))
     plt.plot(sim.net[0][0].realization,'co')
-    plt.ylim(0.8,4.2)
+    plt.axvline(x=H.WORK_END/H.SLOT, color='#d46061', linewidth=1)
+    plt.axvline(x=H.EARLY_T/H.SLOT, color='#d46061', linewidth=1)
+    work_during = np.mean(np.array(H.OVERTIME_COST))+H.WORK_END
+    xlim = (0,200)
+    plt.axvline(x=(work_during)/H.SLOT, color='#d46061', linewidth=1)
+    plt.xlim(xlim)
+    plt.ylim(-0.2,4.2)
     plt.yticks(np.array([0,1,2,3,4]), ('idle','Scheduled','Scheduled(Re)', 'Walk-In',  'Walk-In(Re)'), fontsize=18)
     plt.savefig(data_root+'/realization_day1.png')
     plt.close()
@@ -173,24 +179,40 @@ if __name__ == "__main__":
 
     plt.plot(walkin_queue.mean(axis=1).tolist())
     plt.plot(revisit_queue.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['walkin queue', 'revisit queue'], loc='upper left')
     plt.savefig(data_root+'/plot_MC{}.png'.format(mc))
     plt.close()
 
     plt.plot(queue1.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['Blood queue'], loc='upper left')
     plt.savefig(data_root+'/plot-blood-MC{}.png'.format(mc))
     plt.close()
 
     plt.plot(queue2.mean(axis=1).tolist())
+    plt.xlim(xlim)
     plt.legend(['Scan queue'], loc='upper left')
     plt.savefig(data_root+'/plot-scan-MC{}.png'.format(mc))
     plt.close()
 
     H.utility_measure_mc(sim,mc,data_root)
 
-    print([round(np.mean(lst),3) for lst in H.WASTE[0]])
-    print([len(lst)/mc for lst in H.WASTE[0]])
+    with open(data_root+"/result.txt","w") as f:
+        print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]], file=f)
+        print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]], file=f)
 
-    print([round(np.mean(lst),3) for lst in H.WASTE[1]])
-    print([len(lst)/mc for lst in H.WASTE[1]])
+        print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]], file=f)
+        print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]], file=f)
+
+        print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ', file=f)
+        print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)), file=f)
+
+    print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]])
+    print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]])
+
+    print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]])
+    print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]])
+
+    print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ')
+    print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)))

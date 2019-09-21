@@ -25,6 +25,6 @@ class Patient(object):
         return self.revisit
 
     # when to revisit
-    def policy(self, ri, early_time):
-        return max(ri, early_time)
+    def policy(self, early_time):
+        return max(self.scheduled_revisit_time, early_time)
     

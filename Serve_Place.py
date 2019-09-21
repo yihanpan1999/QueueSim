@@ -60,11 +60,11 @@ class Doctor(object):
         Doctor.ID_generate += 1
         self.trans_prob = trans_prob
         self.env = env
-        self.realization = np.zeros(int(env.sim_end/5)) #11*60*1/5
+        self.realization = np.zeros(int(np.ceil(env.sim_end/H.SLOT)), dtype=int) #11*60*1/5
         
     def work(self, patient):
         # [1 schedule 2 walkin 3 schedule-R 4 walkin-R]
-        slot = int(self.env.now_step // 5)
+        slot = int(self.env.now_step // H.SLOT)
         # print('Service Begin',self.env.now_step)
         if not patient.isRevisit():
             self.realization[slot] = 1 if patient.schedule == True else 3
@@ -77,6 +77,7 @@ class Doctor(object):
             patient.check_list = patient.checklist.copy()
             self.env.Save[self.service_type].append(patient)
             patient.revisit = True
+            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient)
         else:
             self.realization[slot] = 2 if patient.schedule == True else 4
             # print('Revisit',patient.schedule, patient.id, patient.time[0,2])
@@ -87,6 +88,14 @@ class Doctor(object):
             self.env.Save[self.service_type].append(patient)
         # print(slot, self.realization[slot])
         return patient
+
+    def scheduled_revisit_time(self, patient):
+        # t = check_end_time
+        # t = min(check_end_time + 60, H.EARLY_T+30)
+        # t = H.EARLY_T + check_end_time*H.SLOT
+        # t = check_end_time//60+30
+        t = self.finish_time + H.riDELAY
+        return t
     
     def __check_list(self):
         L = []
@@ -95,6 +104,8 @@ class Doctor(object):
                 L.append(i+1)
         return L
             
-    def idle_cost(self):
-        num = np.sum(self.realization==0)
-        return num
+    def cost(self):
+        idx = H.WORK_END // H.SLOT
+        idle = np.sum(self.realization[:idx]==0) * H.SLOT
+        overtime = np.max(np.nonzero(self.realization)[0][-1] * H.SLOT + H.SLOT - H.WORK_END, 0)
+        return idle, overtime
