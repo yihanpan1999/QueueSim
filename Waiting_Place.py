@@ -135,6 +135,14 @@ class Doctor_Place(object):
         return time 
 
     def send_patient(self):
+        switch = {1: self.send_patient_1, 2:self.send_patient_2, 3:self.send_patient_3, 4:self.send_patient_4}
+        try:
+            return switch[args.policy]()
+        except:
+            assert False
+            return None, None 
+
+    def send_patient_1(self):
         if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:
             assert self.WaitingQ.queue[0][0] == self.env.now_step
             patient = self.WaitingQ.get()[1]

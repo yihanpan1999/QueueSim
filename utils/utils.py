@@ -7,8 +7,10 @@ plt.style.use('ggplot')
 
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
 parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
+parser.add_argument('--policy',           type = int,   default = 1)  
+parser.add_argument('--ri',           type = float,   default = 60)  
 
-parser.add_argument('--mc',                 type = int,   default = 200)         # NUMBER OF DAYS
+parser.add_argument('--mc',                 type = int,   default = 100)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
 parser.add_argument('--num_check',          type = int,   default = 2)          # NUMBER OF CHECK ITEMS
 parser.add_argument('--close_time',         type = int,   default = 6)          # ALLOWED TIME PERIOD FOR NEW PATIENTS (hrs)
@@ -44,7 +46,7 @@ NUM_STEP = NUM_CHECK + 2
 walk_time = 2*np.ones([NUM_CHECK+1,NUM_CHECK+1])
 
 # r_i
-riDELAY = 90
+riDELAY = args.ri
 
         
 # -------------------------------------------------------------------------------------------------------
