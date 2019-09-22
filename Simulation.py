@@ -214,5 +214,3 @@ if __name__ == "__main__":
     print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]])
     print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]])
 
-    print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ')
-    print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)))
