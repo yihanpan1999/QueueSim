@@ -8,7 +8,7 @@ plt.style.use('ggplot')
 parser = argparse.ArgumentParser(description='Outpatient Simulation')
 parser.add_argument('--dataroot',           type = str,   default = 'first_half')  
 parser.add_argument('--policy',           type = int,   default = 1)  
-parser.add_argument('--ri',           type = float,   default = 60)  
+parser.add_argument('--ri',           type = float,   default = 0)  
 
 parser.add_argument('--mc',                 type = int,   default = 100)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
