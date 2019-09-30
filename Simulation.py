@@ -128,11 +128,17 @@ if __name__ == "__main__":
 
     fig, axs = plt.subplots(1,1, figsize=(20, 5))
     plt.plot(sim.net[0][0].realization,'co')
-    plt.axvline(x=H.WORK_END/H.SLOT, color='#d46061', linewidth=1)
-    plt.axvline(x=H.EARLY_T/H.SLOT, color='#d46061', linewidth=1)
+    # plt.axvline(x=H.WORK_END/H.SLOT, color='k',linestyle='dashed', linewidth=2)
+    # plt.axvline(x=H.EARLY_T/H.SLOT, ymin=0,ymax=4, color='k',linestyle='dashed', linewidth=2)
+    plt.annotate('No New Scheduled\n (Slot {})'.format(int(H.EARLY_T/H.SLOT)),xy=(H.EARLY_T/H.SLOT,0), xytext=(H.EARLY_T/H.SLOT,0.3),fontsize=12,
+             arrowprops=dict(facecolor='black',shrink=0.01))
+    plt.annotate('No New Visit\n (Slot {})'.format(int(H.WORK_END/H.SLOT)),xy=(H.WORK_END/H.SLOT,0), xytext=(H.WORK_END/H.SLOT,0.3),fontsize=12,
+             arrowprops=dict(facecolor='black',shrink=0.01))
     work_during = np.mean(np.array(H.OVERTIME_COST))+H.WORK_END
     xlim = (0,200)
-    plt.axvline(x=(work_during)/H.SLOT, color='#d46061', linewidth=1)
+    # plt.axvline(x=(work_during)/H.SLOT, color='#d46061', linewidth=1)
+    plt.annotate('End \n (Slot {})'.format(int((work_during)/H.SLOT)),xy=((work_during)/H.SLOT,0), xytext=((work_during)/H.SLOT,0.3),fontsize=12,
+             arrowprops=dict(facecolor='black',shrink=0.01))
     plt.xlim(xlim)
     plt.ylim(-0.2,4.2)
     plt.yticks(np.array([0,1,2,3,4]), ('idle','Scheduled','Scheduled(Re)', 'Walk-In',  'Walk-In(Re)'), fontsize=18)
@@ -181,24 +187,24 @@ if __name__ == "__main__":
     plt.plot(revisit_queue.mean(axis=1).tolist())
     plt.xlim(xlim)
     plt.legend(['walkin queue', 'revisit queue'], loc='upper left')
-    plt.savefig(data_root+'/plot_MC{}.png'.format(mc))
+    plt.savefig(data_root+'/plot_MC{}_{}_{}.png'.format(mc,args.policy,args.ri))
     plt.close()
 
     plt.plot(queue1.mean(axis=1).tolist())
     plt.xlim(xlim)
     plt.legend(['Blood queue'], loc='upper left')
-    plt.savefig(data_root+'/plot-blood-MC{}.png'.format(mc))
+    plt.savefig(data_root+'/plot-blood-MC{}_{}_{}.png'.format(mc,args.policy,args.ri))
     plt.close()
 
     plt.plot(queue2.mean(axis=1).tolist())
     plt.xlim(xlim)
     plt.legend(['Scan queue'], loc='upper left')
-    plt.savefig(data_root+'/plot-scan-MC{}.png'.format(mc))
+    plt.savefig(data_root+'/plot-scan-MC{}_{}_{}.png'.format(mc,args.policy,args.ri))
     plt.close()
 
     H.utility_measure_mc(sim,mc,data_root)
 
-    with open(data_root+"/result.txt","w") as f:
+    with open(data_root+"/result_{}_{}.txt".format(args.policy,args.ri),"w") as f:
         print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]], file=f)
         print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]], file=f)
 
