@@ -15,12 +15,12 @@ trans_prob         = args.trans_prob
 walk_time          = H.walk_time
 
 class Simulation(object):
+    '''
+    This class, Simulation, is to define the relations or processes and to run the whole simulator.
+    '''
     def __init__(self, num_node=num_node, trans_prob=trans_prob, walk_time=walk_time):
-
-        self.now_step = 0.0
-        self.sim_end = H.SIM_END
+        # For statistics
         self.all_patient = []
-    
         self.Patient_arrive_blood = []
         self.Patient_served_blood = []
         self.Walk_in_arrive_blood = []
@@ -31,10 +31,14 @@ class Simulation(object):
         self.Walk_in_served_scan = []
         self.Save = [[],[],[]]
 
+        # For simulator
+        self.now_step = 0.0
+        self.sim_end = H.SIM_END
+        ## servers
         self.net = [[Doctor(self, trans_prob = trans_prob) for _ in range(num_node[0])], 
                     [Blood_Service(self) for _ in range(num_node[1])], 
                     [Scan_Service(self) for _ in range(num_node[2])]]
-
+        ## waiting place
         self.waiting_place = [Doctor_Place(self,  0, True, p_showup, walk_in_rate), 
                               Waiting_Place(self, 1, True, arrival_rate_blood), 
                               Waiting_Place(self, 2, True, arrival_rate_scan)]
@@ -54,41 +58,48 @@ class Simulation(object):
         H.SCAN_ARRIVAL += sim.waiting_place[2].Arrival_time
         H.SCAN_SERVED += sim.waiting_place[2].Served_time
         
+    # core function: to define the relations or processes and to run the whole simulator.
     def run(self):
         while self.now_step < H.SIM_END:
+            # get next event
             self.now_step, type, id = self.next()
-            
             if self.now_step >= H.SIM_END: 
                 break
 
+            # the patient leave the waiting place and will be served.
             patient = self.waiting_place[type].send_patient() # policy 2: balance walk-in and revisit queue
 
             before_State = patient.isRevisit() 
             patient = self.net[type][id].work(patient)
             
+            # transport
             TO = None
-            if before_State and type == 0:
+            if before_State and type == 0: # before: revisit patient; now: served by doctor; so: go home 
                 TO = 2019 # GO HOME
             else:
-                if len(patient.checklist) == 0:
-                    if len(patient.check_list) == 0:
-                        TO = 2020 # GO HOME
-                    else:
-                        TO = 0 # GO DOCTOR
-                        if patient.time[0, -1] == self.net[0][0].id: 
-                            last = self.argmax_report_time(patient)
-                            patient.time[-1, 0] = patient.policy(patient.time[last, 3] + self.walk_time[last, 0])                                     #@# arrive exactly
-                            self.waiting_place[TO].add_patient(patient, True)
+                if len(patient.checklist) == 0: # no check item to be done
+                    if len(patient.check_list) == 0: # do not need to do some check
+                        TO = 2020 # GO HOME directly
+                    else: # he/she has finished all check items
+                        TO = 0 # GO DOCTOR (revisit)
+                        if patient.time[0, -1] == self.net[0][0].id: # this doctor's patient?
+                            last = self.argmax_report_time(patient) # which test is later
+                            complete_time = patient.time[last, 3] + self.walk_time[last, 0] # must wait for report
+                            patient.time[-1, 0] = patient.policy(complete_time) # decide when to see the doctor, arrive time
+                            self.waiting_place[TO].add_patient(patient, True) # push to the doctor queue
                         else: 
                             TO = 2000 # GO OTHER DOCTOR
-                else:
-                    TO = patient.checklist.pop(0)
-                    patient.time[TO, 0] = patient.time[type, 2] + self.walk_time[type, TO]
-                    self.waiting_place[TO].add_patient(patient)
+                else: # still have some test
+                    TO = patient.checklist.pop(0) # next test
+                    patient.time[TO, 0] = patient.time[type, 2] + self.walk_time[type, TO] # arrive time
+                    self.waiting_place[TO].add_patient(patient) # push to the queue
+        
+        # For statistics
         doctor_cost = self.net[0][0].cost()
         H.IDLE_COST.append(doctor_cost[0])
         H.OVERTIME_COST.append(doctor_cost[1])
-            
+
+    # get the next event 
     def next(self):
         type, id = None, None
         m = H.SIM_END
@@ -101,6 +112,7 @@ class Simulation(object):
                     m = temp
         return m, type, id    
         
+    # to find the lastest report
     def argmax_report_time(self, patient):
         idx = None
         M = -1
@@ -120,8 +132,11 @@ if __name__ == "__main__":
     # +++++++++++++++++++++++++++++++++++++++
     mc = args.mc
 
+    # Run simulator (only two rows)
     sim = Simulation()
     sim.run()
+
+
     # print(sim.net[0][0].realization)
     H.waste_time(sim)
     H.utility_measure(sim,mc)

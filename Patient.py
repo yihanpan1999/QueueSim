@@ -28,8 +28,8 @@ class Patient(object):
         self.scheduled_revisit_time = None # the simulator will tell a prediction time to revisit
 
         # the check items which the patient need to be served
-        self.check_list = [] 
-        self.checklist =  [] 
+        self.check_list = [] # check items the doctor gives
+        self.checklist =  [] # check items still need to be done in the future (do not include the check items which have been done)
         
     # Meaningless
     def __lt__(self, a):
