@@ -4,7 +4,7 @@ from Patient import Patient
 
 class Waiting_Place(object):
     '''
-    This class, Waiting_Place, is to model the wating room in the serrvice in the real world.
+    This class, Waiting_Place, is to model the waiting room in the service in the real world.
     '''
     def __init__(self, env, PlaceType, GENERATE=False, lamda_or_patients=list()):
         # For simulator
@@ -65,7 +65,7 @@ class Waiting_Place(object):
     
 class Doctor_Place(object):
     '''
-    This class, Doctor_Place, is to model the wating room in the serrvice in the real world.
+    This class, Doctor_Place, is to model the waiting room in the service in the real world.
     Class Doctor_Place is similar to Class Waiting_Place.
     '''
     def __init__(self, env, PlaceType, GENERATE=False, prob_or_patients=list(), walk_in_rate=None):
