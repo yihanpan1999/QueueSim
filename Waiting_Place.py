@@ -3,18 +3,32 @@ from utils.utils import *
 from Patient import Patient
 
 class Waiting_Place(object):
+    '''
+    This class, Waiting_Place, is to model the wating room in the serrvice in the real world.
+    '''
     def __init__(self, env, PlaceType, GENERATE=False, lamda_or_patients=list()):
+        # For simulator
+        self.env = env # contain the whole info of the simulator
+
+        # For statistics, to record some important time
         self.Arrival_time = []
         self.Served_time = []
-        self.env = env 
-        self.WaitingQ = queue.PriorityQueue()
-        self.PlaceType = PlaceType 
-        if GENERATE: 
+
+        # For modeling the service
+        self.PlaceType = PlaceType # to identify blood or ulteasound
+        self.WaitingQ = queue.PriorityQueue() # only have a queue.
+
+        # Add external patients intially
+        if GENERATE: # Generate by lambda (input is lambda)
             patients = self.__generate_external(lamda_or_patients)
-        else:
+        else: # input is patients
             patients = lamda_or_patients            
         self.__add_external(patients)
 
+
+
+    # Generate by lambda (Exponential Distribution)
+    # Generate in advance, so static
     def __generate_external(self, lamda):
         now = 0
         patients = []
@@ -23,20 +37,24 @@ class Waiting_Place(object):
             patients.append(Patient(self.env, self.PlaceType, arrive_time=now))
         return patients
     
+    # push a patient into the queue
     def add_patient(self, patient):
         self.Arrival_time.append(patient.time[self.PlaceType, 0])
         self.WaitingQ.put((patient.time[self.PlaceType, 0], patient)) 
         
+    # push external patients generated in advance
     def __add_external(self, patients):
         for patient in patients:
             self.add_patient(patient)
 
+    # This is to tell the simulator when is the next active time or the completed time of one patient.
     def next_patient(self):
         if self.WaitingQ.empty():
             return H.SIM_END
         else:
             return max(self.WaitingQ.queue[0][0], self.env.now_step)
         
+    # One patient is over, and he/she need to leave the service.
     def send_patient(self):
         if self.WaitingQ.empty() or self.WaitingQ.queue[0][0] > self.env.now_step:
             return None
@@ -46,8 +64,15 @@ class Waiting_Place(object):
             return patient
     
 class Doctor_Place(object):
+    '''
+    This class, Doctor_Place, is to model the wating room in the serrvice in the real world.
+    Class Doctor_Place is similar to Class Waiting_Place.
+    '''
     def __init__(self, env, PlaceType, GENERATE=False, prob_or_patients=list(), walk_in_rate=None):
+        # For simulator
+        self.env = env # contain the whole info of the simulator
 
+        # For statistics, to record some important time
         self.Walk_in_times = [] # walk in queue + 1
         self.Walk_in_served_times = [] # walk in queue - 1
         self.Revisit_times = [] # revisit queue + 1
@@ -55,31 +80,36 @@ class Doctor_Place(object):
         self.Arrive_times = []
         self.Served_times = []
         self.last_patient = 0  # 0:revisit 1: walkin
-
-        self.env = env
+        
         self.Idel_times = []
         self.Busy_times = [[],[],[],[]]
 
-        if GENERATE:
-            patients = self.__generate_schedule(prob_or_patients,H.POLICY)
-        else:
-            patients = prob_or_patients
-        self.Schedule = patients    
-        self.WaitingQ = queue.PriorityQueue()
+        # For modeling the service
+        self.PlaceType = 0  # to identify, doctor is 0
+        ## have 3 queues, different types have different queue
+        self.WaitingQ = queue.PriorityQueue() 
+        self.walkin = queue.Queue() 
+        self.revisit = queue.PriorityQueue()
 
-        self.PlaceType = 0 
+        # Add external patients intially
+        ## Scheduled patients
+        if GENERATE: # Generate by appointment policy
+            patients = self.__generate_schedule(prob_or_patients,H.POLICY)
+        else: # input is patients
+            patients = prob_or_patients
+        self.Schedule = patients  
         for patient in patients:
             self.add_patient(patient,patient.revisit)
-
+        ## Walk-in patients
         self.walk_in_rate = walk_in_rate
-        self.walkin = queue.Queue() 
-        
         walkin_patients = patients = self.__generate_walkin(walk_in_rate)
         for patient in walkin_patients:
             self.add_walkin(patient)
 
-        self.revisit = queue.PriorityQueue()
+
     
+    # Generate by lambda (Exponential Distribution)
+    # Generate in advance, so static
     def __generate_walkin(self, lamda):
         now = 0
         walkin_patients = []
@@ -90,9 +120,12 @@ class Doctor_Place(object):
             self.Arrive_times.append(now)
         return walkin_patients
 
+    # push walk-in patients into the queue
     def add_walkin(self, patient):
         self.walkin.put(patient)
 
+    # Generate by appointment policy
+    # Generate in advance, so static
     def __generate_schedule(self, p, policy):
         policy = H.POLICY
         patients = []
@@ -116,15 +149,18 @@ class Doctor_Place(object):
             i += H.SLOT
         return patients
         
+    # push a patient into the queue
     def add_patient(self, patient, revisit=False):
         if revisit:
+            # record
             self.Revisit_times.append(patient.time[-1,0])
             self.Arrive_times.append(patient.time[-1,0])
-
+            # action
             self.revisit.put((patient.time[-1, 0], patient))
         else:
             self.WaitingQ.put((patient.time[self.PlaceType, 0], patient)) 
 
+    # This is to tell the simulator when is the next active time or the completed time of one patient.
     def next_patient(self):
         revisit = self.revisit.queue[0][0] if not self.revisit.empty() else H.SIM_END
         scheduled = self.WaitingQ.queue[0][0] if not self.WaitingQ.empty() else H.SIM_END
@@ -134,6 +170,7 @@ class Doctor_Place(object):
             time = max(self.env.now_step, min(scheduled, H.Ceil_Slot(self.walkin.queue[0].time[0,0]), H.Ceil_Slot(revisit)))
         return time 
 
+    # One patient is over, and he/she need to leave the service.
     def send_patient(self):
         switch = {1: self.send_patient_1, 2:self.send_patient_2, 3:self.send_patient_3, 4:self.send_patient_4}
         try:
