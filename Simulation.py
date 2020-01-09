@@ -62,19 +62,19 @@ class Simulation(object):
     def run(self):
         while self.now_step < H.SIM_END:
             # get next event
-            self.now_step, type, id = self.next()
+            self.now_step, service_type, service_id = self.next_event()
             if self.now_step >= H.SIM_END: 
                 break
 
             # the patient leave the waiting place and will be served.
-            patient = self.waiting_place[type].send_patient() # policy 2: balance walk-in and revisit queue
+            patient = self.waiting_place[service_type].send_patient() # policy 2: balance walk-in and revisit queue
 
             before_State = patient.isRevisit() 
-            patient = self.net[type][id].work(patient)
+            patient = self.net[service_type][service_id].work(patient)
             
             # transport
             TO = None
-            if before_State and type == 0: # before: revisit patient; now: served by doctor; so: go home 
+            if before_State and service_type == 0: # before: revisit patient; now: served by doctor; so: go home 
                 TO = 2019 # GO HOME
             else:
                 if len(patient.checklist) == 0: # no check item to be done
@@ -91,7 +91,7 @@ class Simulation(object):
                             TO = 2000 # GO OTHER DOCTOR
                 else: # still have some test
                     TO = patient.checklist.pop(0) # next test
-                    patient.time[TO, 0] = patient.time[type, 2] + self.walk_time[type, TO] # arrive time
+                    patient.time[TO, 0] = patient.time[service_type, 2] + self.walk_time[service_type, TO] # arrive time
                     self.waiting_place[TO].add_patient(patient) # push to the queue
         
         # For statistics
@@ -100,18 +100,18 @@ class Simulation(object):
         H.OVERTIME_COST.append(doctor_cost[1])
 
     # get the next event 
-    def next(self):
-        type, id = None, None
-        m = H.SIM_END
+    def next_event(self):
+        service_type, service_id = None, None
+        current = H.SIM_END
         for i in range(len(self.net)):
             expected_time = self.waiting_place[i].next_patient()
             for j in range(len(self.net[i])):
                 temp = max(expected_time, self.net[i][j].finish_time)
-                if temp < m:
-                    type, id = i, j
-                    m = temp
-        return m, type, id    
-        
+                if temp < current:
+                    service_type, service_id = i, j
+                    current = temp
+        return current, service_type, service_id
+
     # to find the lastest report
     def argmax_report_time(self, patient):
         idx = None
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     walkin_queue  = pd.DataFrame({'Day{}'.format(0): H.discretetize(xy,y)})
     revisit_queue = pd.DataFrame({'Day{}'.format(0): H.discretetize(xz,z)})
 
-    for i in range(1,mc):
+    for i in range(1, mc):
         sim = Simulation()
         sim.run()
         # print(sim.net[0][0].realization)

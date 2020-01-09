@@ -26,7 +26,7 @@ class Serve_Place(object):
         # serve and record, for simulator
         patient.time[self.service_type,1] = self.env.now_step # record service start time 
         if self.service_type == 1: 
-            serve_time  = np.random.uniform(args.blood_service_rate[0],args.blood_service_rate[1])
+            serve_time  = np.random.uniform(args.blood_service_rate[0], args.blood_service_rate[1])
             report_time = random.sample(args.blood_report_time,1)[0]
         elif self.service_type == 2:
             serve_time = random.sample(args.scan_service_rate,1)[0]
@@ -38,8 +38,8 @@ class Serve_Place(object):
         self.finish_time = self.env.now_step + serve_time
 
         # For statistics
-        self.start_stamps.append(patient.time[self.service_type,2])
-        self.end_stamps.append(patient.time[self.service_type,3])
+        self.start_stamps.append(patient.time[self.service_type, 1])
+        self.end_stamps.append(patient.time[self.service_type, 2])
         if patient.time[0,0] != None:
             self.busy_times[0] += serve_time
         else: 
@@ -95,9 +95,9 @@ class Doctor(object):
         # print('Service Begin',self.env.now_step)
         if not patient.isRevisit(): # new patient
             # For simulator
-            patient.time[self.service_type,1]  = self.env.now_step # service start time
-            patient.time[self.service_type,2]  = self.env.now_step + self.serve_time # service end time
-            patient.time[self.service_type,-1] = self.id # service id
+            patient.time[self.service_type, 1]  = self.env.now_step # service start time
+            patient.time[self.service_type, 2]  = self.env.now_step + self.serve_time # service end time
+            patient.time[self.service_type, -1] = self.id # service id
             ## the check items which the patient need to be served
             patient.checklist = self.__check_list().copy() 
             patient.check_list = patient.checklist.copy()
