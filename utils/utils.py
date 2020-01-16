@@ -18,7 +18,7 @@ parser.add_argument('--slot_time',          type = int,   default = 5)          
 parser.add_argument('--sim_end',            type = int,   default = 8*60)      # ONE DAY SERVICE TIME (mins)
  
 parser.add_argument('--p_showup',           type = float, default = 0.5)        # 30/72 ALL SLOTS ARE OCCUPIRED BY SCHEDULED PEOPLE
-parser.add_argument('--walk_in_rate',       type = float, default = 4/60)       # 4 PATIENT  / 60 MINUTES FOR WALK INS
+parser.add_argument('--walk_in_rate',       type = float, default = [2.92201835/60, 8.15596330/60, 7.71559633/60, 6.61467890/60, 2.98623953/60, 0.51834862/60])  # TIME-VARYING POISSON
 parser.add_argument('--arrival_rate_blood', type = float, default = 30/60)      # 30 PATIENTS / 60 MINUTES FOR EXTERNAL BLOOD TEST
 parser.add_argument('--arrival_rate_scan',  type = float, default = 20/60)      # 20 PATIENT  / 60 MINUTES FOR EXTERNAL SCAN TEST
 
@@ -86,7 +86,7 @@ DOCTOR_UTIL = []
 BLOOD_UTIL = []
 SCAN_UTIL = []
 # -------------------- #
-WASTE = [[[],[],[],[]],[[],[],[],[]]]
+WASTE = [[],[],[],[]]
 IDLE_COST = []
 OVERTIME_COST= []
 
@@ -267,10 +267,10 @@ def calculate_area(x,y):
         area += duration * value
     return area / x[-1]
 
-def doctor_utility_pie(ax,utility,mc=None):
+def doctor_utility_pie(ax, utility, mc=None):
 
-    labels = 'Schedule', 'Revisit (Schedule)', 'Revisit (Walk In)', 'Walk In', 'Idle Slot'
-    explode = (0, 0, 0, 0, 0.1) ## only "explode" the 2nd slice (i.e. 'Revisit')
+    labels = 'Walk In', 'Revisit (Walk In)', 'Idle Slot'
+    explode = (0, 0, 0.1) ## only "explode" the 2nd slice (i.e. 'Revisit')
 
     if mc == None:
         busy = sum(utility)
@@ -283,7 +283,7 @@ def doctor_utility_pie(ax,utility,mc=None):
         idle = sizes[-1]
     ax.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True, startangle=90)
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-    ax.set_title("Doctor Utility\n{} - {} - {} - {} - {}".format(round(utility[0]),round(utility[1]),round(utility[2]),round(utility[3]),round(idle)))
+    ax.set_title("Doctor Utility\n{} - {} - {}".format(round(utility[0]),round(utility[1]),round(idle)))
     ax.legend(labels,loc="upper right",fontsize=10)
 
 def service_pie_utility(ax,servers, arrival_rate, mc=None):
@@ -368,7 +368,7 @@ def performance_measure_mc(sim,mc):
 
 def utility_measure(sim,k):
     fig, axs = plt.subplots(1, 1)
-    doctor_utility_pie(axs,[len(a) for a in sim.waiting_place[0].Busy_times])
+    doctor_utility_pie(axs, [len(a) for a in sim.waiting_place[0].Busy_times])
     # plt.savefig('utility_DOC_DAY{}.png'.format(k))
     plt.close()
 
@@ -469,12 +469,10 @@ def pt_patient_stats(sim):
 
 def waste_time(sim):
     for i, patient in enumerate(sim.all_patient):
-        for i in range(4):
-            if patient.time[i][2] != None:
-                if patient.schedule == True:
-                    WASTE[0][i].append(patient.time[i][1] - patient.time[i][0])
-                else: 
-                    WASTE[1][i].append(patient.time[i][1] - patient.time[i][0])
+        if patient.time[0][0] != None:
+            for i in range(4):
+                if patient.time[i][2] != None:
+                    WASTE[i].append(patient.time[i][1] - patient.time[i][0])
 
 def df_patient_stats(sim):
 
