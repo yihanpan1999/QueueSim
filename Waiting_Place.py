@@ -73,51 +73,47 @@ class Doctor_Place(object):
         self.env = env # contain the whole info of the simulator
 
         # For statistics, to record some important time
-        self.Walk_in_times = [] # walk in queue + 1
-        self.Walk_in_served_times = [] # walk in queue - 1
-        self.Revisit_times = [] # revisit queue + 1
-        self.Revisit_served_times = [] # revisit queue - 1
         self.Arrive_times = []
         self.Served_times = []
+        self.Revisit_times = [] # revisit queue + 1
+        self.Revisit_served_times = [] # revisit queue - 1
         self.last_patient = 0  # 0:revisit 1: walkin
         
 #        self.Idle_times = []
-        self.Busy_times = [[],[],[],[]]
+        self.Busy_times = [[],[]] # [[walkin], [walkin-revisit]]
 
         # For modeling the service
         self.PlaceType = 0  # to identify, doctor is 0
         ## have 3 queues, different types have different queue
-        self.WaitingQ = queue.PriorityQueue() 
+#        self.WaitingQ = queue.PriorityQueue() 
         self.walkin = queue.Queue() 
         self.revisit = queue.PriorityQueue()
 
         # Add external patients intially
         ## Scheduled patients
-        if GENERATE: # Generate by appointment policy
-            patients = self.__generate_schedule(prob_or_patients, H.POLICY)
-        else: # input is patients
-            patients = prob_or_patients
-        self.Schedule = patients  
-        for patient in patients:
-            self.add_patient(patient, patient.revisit)
+#        if GENERATE: # Generate by appointment policy
+#            patients = self.__generate_schedule(prob_or_patients, H.POLICY)
+#        else: # input is patients
+#            patients = prob_or_patients
+#        self.Schedule = patients  
+#        for patient in patients:
+#            self.add_patient(patient, patient.revisit)
         ## Walk-in patients
         self.walk_in_rate = walk_in_rate
-        walkin_patients = patients = self.__generate_walkin(walk_in_rate)
+        walkin_patients = self.__generate_walkin(walk_in_rate)
         for patient in walkin_patients:
             self.add_walkin(patient)
-
-
-    
+   
     # Generate by lambda (Exponential Distribution)
     # Generate in advance, so static
-    def __generate_walkin(self, lamda):
-        now = H.Generator.Exponential(lamda)
+    def __generate_walkin(self, rate):
+        now = H.Generator.Exponential(max(rate))
         walkin_patients = []
         while now < H.EARLY_T:
-            walkin_patients.append(Patient(self.env, self.PlaceType, arrive_time=now))
-            self.Walk_in_times.append(now)
-            self.Arrive_times.append(now)
-            now += H.Generator.Exponential(lamda)
+            if H.Generator.Bernoulli(rate[int(now//60)]/max(rate)):   # Thinning
+                walkin_patients.append(Patient(self.env, self.PlaceType, arrive_time=now))
+                self.Arrive_times.append(now)
+            now += H.Generator.Exponential(max(rate))
         return walkin_patients
 
     # push walk-in patients into the queue
@@ -166,14 +162,14 @@ class Doctor_Place(object):
             revisit = self.revisit.queue[0][0]
         else:
             revisit = H.SIM_END 
-        if not self.WaitingQ.empty():
-            scheduled = self.WaitingQ.queue[0][0]
-        else:
-            scheduled = H.SIM_END
+#        if not self.WaitingQ.empty():
+#            scheduled = self.WaitingQ.queue[0][0]
+#        else:
+#            scheduled = H.SIM_END
         if len(self.walkin.queue) == 0:
-            time = max(self.env.now_step, min(scheduled, H.Ceil_Slot(revisit)))
+            time = max(self.env.now_step, revisit)
         else:
-            time = max(self.env.now_step, min(scheduled, H.Ceil_Slot(self.walkin.queue[0].time[0,0]), H.Ceil_Slot(revisit)))
+            time = max(self.env.now_step, min(self.walkin.queue[0].time[0,0], revisit))
         return time 
 
     # One patient is over, and he/she needs to leave the service.
@@ -186,35 +182,52 @@ class Doctor_Place(object):
             return None, None 
 
     def send_patient_1(self):
-        if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:
-            assert self.WaitingQ.queue[0][0] == self.env.now_step
-            patient = self.WaitingQ.get()[1]
+        if (not self.revisit.empty()) and self.revisit.queue[0][0] <= self.env.now_step:
+            self.Revisit_served_times.append(self.env.now_step)
+            self.Served_times.append(self.env.now_step)
+            patient = self.revisit.get()[1]
+            self.Busy_times[1].append(self.env.now_step)
+            return patient
+
+        elif (not self.walkin.empty()) and self.walkin.queue[0].time[0,0] <= self.env.now_step:
+            self.Served_times.append(self.env.now_step)
+            patient = self.walkin.get()
             self.Busy_times[0].append(self.env.now_step)
             return patient
 
         else:
-            if (not self.revisit.empty()) and H.Ceil_Slot(self.revisit.queue[0][0]) <= self.env.now_step:
-                self.Revisit_served_times.append(self.env.now_step)
-                self.Served_times.append(self.env.now_step)
-                
-                patient = self.revisit.get()[1]
-                if patient in self.Schedule:
-                    self.Busy_times[1].append(self.env.now_step)
-                else: 
-                    self.Busy_times[2].append(self.env.now_step)
-                return patient
-
-            elif (not self.walkin.empty()) and H.Ceil_Slot(self.walkin.queue[0].time[0,0]) <= self.env.now_step:
-                self.Walk_in_served_times.append(self.env.now_step)
-                self.Served_times.append(self.env.now_step)
-
-                patient = self.walkin.get()
-                self.Busy_times[3].append(self.env.now_step)
-                return patient
-
-            else:
-                assert False
-                return None, None   
+            assert False
+            return None, None  
+        
+#        if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:
+#            assert self.WaitingQ.queue[0][0] == self.env.now_step
+#            patient = self.WaitingQ.get()[1]
+#            self.Busy_times[0].append(self.env.now_step)
+#            return patient
+#
+#        else:
+#            if (not self.revisit.empty()) and H.Ceil_Slot(self.revisit.queue[0][0]) <= self.env.now_step:
+#                self.Revisit_served_times.append(self.env.now_step)
+#                self.Served_times.append(self.env.now_step)
+#                
+#                patient = self.revisit.get()[1]
+#                if patient in self.Schedule:
+#                    self.Busy_times[1].append(self.env.now_step)
+#                else: 
+#                    self.Busy_times[2].append(self.env.now_step)
+#                return patient
+#
+#            elif (not self.walkin.empty()) and H.Ceil_Slot(self.walkin.queue[0].time[0,0]) <= self.env.now_step:
+#                self.Walk_in_served_times.append(self.env.now_step)
+#                self.Served_times.append(self.env.now_step)
+#
+#                patient = self.walkin.get()
+#                self.Busy_times[3].append(self.env.now_step)
+#                return patient
+#
+#            else:
+#                assert False
+#                return None, None   
 
     def send_patient_2(self):
         if (not self.WaitingQ.empty()) and self.WaitingQ.queue[0][0] <= self.env.now_step:

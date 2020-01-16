@@ -84,8 +84,8 @@ class Simulation(object):
                         TO = 0 # GO DOCTOR (revisit)
                         if patient.time[0, -1] == self.net[0][0].id: # this doctor's patient?
                             last = self.argmax_report_time(patient) # which test is later
-                            complete_time = patient.time[last, 3] + self.walk_time[last, 0] # must wait for report
-                            patient.time[-1, 0] = patient.policy(complete_time) # decide when to see the doctor, arrive time
+                            complete_time = patient.time[last, 3] + self.walk_time[last, 0] # must walk for report
+                            patient.time[-1, 0] = complete_time # decide when to see the doctor, arrival time
                             self.waiting_place[TO].add_patient(patient, True) # push to the doctor queue
                         else: 
                             TO = 2000 # GO OTHER DOCTOR
@@ -95,9 +95,9 @@ class Simulation(object):
                     self.waiting_place[TO].add_patient(patient) # push to the queue
         
         # For statistics
-        doctor_cost = self.net[0][0].cost()
-        H.IDLE_COST.append(doctor_cost[0])
-        H.OVERTIME_COST.append(doctor_cost[1])
+#        doctor_cost = self.net[0][0].cost()
+#        H.IDLE_COST.append(doctor_cost[0])
+#        H.OVERTIME_COST.append(doctor_cost[1])
 
     # get the next event 
     def next_event(self):
@@ -139,10 +139,10 @@ if __name__ == "__main__":
 
     # print(sim.net[0][0].realization)
     H.waste_time(sim)
-    H.utility_measure(sim,mc)
+    H.utility_measure(sim, mc)
 
     fig, axs = plt.subplots(1,1, figsize=(20, 5))
-    plt.plot(sim.net[0][0].realization,'co')
+#    plt.plot(sim.net[0][0].realization,'co')
     # plt.axvline(x=H.WORK_END/H.SLOT, color='k',linestyle='dashed', linewidth=2)
     # plt.axvline(x=H.EARLY_T/H.SLOT, ymin=0,ymax=4, color='k',linestyle='dashed', linewidth=2)
     plt.annotate('No New Scheduled\n (Slot {})'.format(int(H.EARLY_T/H.SLOT)),xy=(H.EARLY_T/H.SLOT,0), xytext=(H.EARLY_T/H.SLOT,0.3),fontsize=12,
@@ -152,15 +152,15 @@ if __name__ == "__main__":
     work_during = np.mean(np.array(H.OVERTIME_COST))+H.WORK_END
     xlim = (0,200)
     # plt.axvline(x=(work_during)/H.SLOT, color='#d46061', linewidth=1)
-    plt.annotate('End \n (Slot {})'.format(int((work_during)/H.SLOT)),xy=((work_during)/H.SLOT,0), xytext=((work_during)/H.SLOT,0.3),fontsize=12,
-             arrowprops=dict(facecolor='black',shrink=0.01))
+#    plt.annotate('End \n (Slot {})'.format(int((work_during)/H.SLOT)),xy=((work_during)/H.SLOT,0), xytext=((work_during)/H.SLOT,0.3),fontsize=12,
+#             arrowprops=dict(facecolor='black',shrink=0.01))
     plt.xlim(xlim)
     plt.ylim(-0.2,4.2)
     plt.yticks(np.array([0,1,2,3,4]), ('idle','Scheduled','Scheduled(Re)', 'Walk-In',  'Walk-In(Re)'), fontsize=18)
     plt.savefig(data_root+'/realization_day1.png')
     plt.close()
-    xy,y,xz,z = H.get_doctor_queue(sim.waiting_place[0].Walk_in_times, 
-                                    sim.waiting_place[0].Walk_in_served_times, 
+    xy,y,xz,z = H.get_doctor_queue(sim.waiting_place[0].Arrive_times, 
+                                    sim.waiting_place[0].Served_times, 
                                     sim.waiting_place[0].Revisit_times, 
                                     sim.waiting_place[0].Revisit_served_times)
     x1,y1 = H.get_service_queue(sim.waiting_place[1].Arrival_time,  sim.waiting_place[1].Served_time)
@@ -181,8 +181,8 @@ if __name__ == "__main__":
         H.utility_measure(sim,i)
 
         # 2) Queue Length
-        xy,y,xz,z = H.get_doctor_queue(sim.waiting_place[0].Walk_in_times, 
-                                       sim.waiting_place[0].Walk_in_served_times, 
+        xy,y,xz,z = H.get_doctor_queue(sim.waiting_place[0].Arrive_times, 
+                                       sim.waiting_place[0].Served_times, 
                                        sim.waiting_place[0].Revisit_times, 
                                        sim.waiting_place[0].Revisit_served_times)
         x1,y1 = H.get_service_queue(sim.waiting_place[1].Arrival_time,  sim.waiting_place[1].Served_time)
@@ -220,20 +220,20 @@ if __name__ == "__main__":
     H.utility_measure_mc(sim,mc,data_root)
 
     with open(data_root+"/result_{}_{}.txt".format(args.policy,args.ri),"w") as f:
-        print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]], file=f)
-        print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]], file=f)
+#        print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]], file=f)
+#        print("schedule count:",[len(lst)/mc for lst in H.WASTE], file=f)
 
-        print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]], file=f)
-        print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]], file=f)
+        print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE], file=f)
+        print("walk-in count", [len(lst)/mc for lst in H.WASTE], file=f)
 
         print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ', file=f)
         print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)), file=f)
+#
+#    print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]])
+#    print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]])
 
-    print("schedule waiting:",[round(np.mean(lst),3) for lst in H.WASTE[0]])
-    print("schedule count:",[len(lst)/mc for lst in H.WASTE[0]])
+    print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE])
+    print("walk-in count", [len(lst)/mc for lst in H.WASTE])
 
-    print("walk-in waiting", [round(np.mean(lst),3) for lst in H.WASTE[1]])
-    print("walk-in count", [len(lst)/mc for lst in H.WASTE[1]])
-
-    print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ')
-    print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)))
+#    print("idle cost:", np.mean(np.array(H.IDLE_COST)), end=', ')
+#    print("overtime cost:", np.mean(np.array(H.OVERTIME_COST)))

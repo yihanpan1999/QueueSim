@@ -1,6 +1,7 @@
 import utils as H
 from utils.package import *
 from utils import parser
+import numpy as np
 args = parser.parse_args()
 
 class Serve_Place(object):
@@ -40,9 +41,9 @@ class Serve_Place(object):
         # For statistics
         self.start_stamps.append(patient.time[self.service_type, 1])
         self.end_stamps.append(patient.time[self.service_type, 2])
-        if patient.time[0,0] != None:
+        if patient.time[0,0] != None:   # not external patients
             self.busy_times[0] += serve_time
-        else: 
+        else:  # external patients
             self.busy_times[1] += serve_time
         self.env.Save[self.service_type].append(patient)
 
@@ -79,50 +80,52 @@ class Doctor(object):
 
         # For statistics
         ## which types of patients are served at each slot
-        self.realization = np.zeros(int(np.ceil(env.sim_end/H.SLOT)), dtype=int) #11*60*1/5 
-
+#        self.realization = np.zeros(int(np.ceil(env.sim_end/H.SLOT)), dtype=int) #11*60*1/5 
+        # 1:schedule  2:schedule-revisit  3:walkin  4:walkin-revisit
+        
         # For modeling the service
         self.service_type = 0
         self.id = Doctor.ID_generate
         Doctor.ID_generate += 1
         self.finish_time = 0 # when the recent service will be over 
-        self.serve_time = H.SLOT # a fixed time
+#        self.serve_time = H.SLOT # a fixed time
         self.trans_prob = trans_prob # the probability to do some check
         
     def work(self, patient):
-        # [1 schedule 2 walkin 3 schedule-R 4 walkin-R]
-        slot = int(self.env.now_step // H.SLOT) # how many slots are there opening
+#        slot = int(self.env.now_step // H.SLOT) # how many slots are there opening
         # print('Service Begin',self.env.now_step)
         if not patient.isRevisit(): # new patient
             # For simulator
+            service_time = np.random.normal(7, 2)
             patient.time[self.service_type, 1]  = self.env.now_step # service start time
-            patient.time[self.service_type, 2]  = self.env.now_step + self.serve_time # service end time
+            patient.time[self.service_type, 2]  = self.env.now_step + service_time # service end time
             patient.time[self.service_type, -1] = self.id # service id
             ## the check items which the patient need to be served
             patient.checklist = self.__check_list().copy() 
             patient.check_list = patient.checklist.copy()
             patient.revisit = True # change state
             ## predict time to revisit based on the checklist and env
-            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient)
+#            patient.scheduled_revisit_time = self.scheduled_revisit_time(patient)
             ## for finding next event
-            self.finish_time = self.env.now_step + self.serve_time # service end time
+            self.finish_time = self.env.now_step + service_time # service end time
 
             # For statistics
-            self.realization[slot] = 1 if patient.schedule == True else 3 # record the type of patient at this slot
+#            self.realization[slot] = 1 if patient.schedule == True else 3 # record the type of patient at this slot
             # print('First Come',patient.schedule, patient.id)
             self.env.Save[self.service_type].append(patient)
 
         else: # revisit patient
             # For simulator
+            service_time = np.random.normal(7, 2)
             patient.time[-1,1] = self.env.now_step # service start time
-            patient.time[-1,2] = self.env.now_step + self.serve_time # service end time
+            patient.time[-1,2] = self.env.now_step + service_time # service end time
             patient.time[-1,-1] = self.id # service id
             ## for finding next event
-            self.finish_time = self.env.now_step + self.serve_time
+            self.finish_time = self.env.now_step + service_time
 
             # For statistics
             self.env.Save[self.service_type].append(patient)
-            self.realization[slot] = 2 if patient.schedule == True else 4 # record the type of patient at this slot
+#            self.realization[slot] = 2 if patient.schedule == True else 4 # record the type of patient at this slot
             # print('Revisit',patient.schedule, patient.id, patient.time[0,2])
         # print(slot, self.realization[slot])
         return patient
