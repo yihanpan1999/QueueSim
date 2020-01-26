@@ -2,6 +2,7 @@ import utils as H
 from utils.package import *
 from utils import parser
 import numpy as np
+from scipy.stats import norminvgauss
 args = parser.parse_args()
 
 class Serve_Place(object):
@@ -87,7 +88,7 @@ class Doctor(object):
         self.service_type = 0
         self.id = Doctor.ID_generate
         Doctor.ID_generate += 1
-        self.finish_time = 0 # when the recent service will be over 
+        self.finish_time = 60 # when the recent service will be over 
 #        self.serve_time = H.SLOT # a fixed time
         self.trans_prob = trans_prob # the probability to do some check
         
@@ -96,7 +97,7 @@ class Doctor(object):
         # print('Service Begin',self.env.now_step)
         if not patient.isRevisit(): # new patient
             # For simulator
-            service_time = np.random.normal(7, 2)
+            service_time = norminvgauss.rvs(7.405201799947, 7.189292406621, 0.07906712903266, 1.7043134066555)
             patient.time[self.service_type, 1]  = self.env.now_step # service start time
             patient.time[self.service_type, 2]  = self.env.now_step + service_time # service end time
             patient.time[self.service_type, -1] = self.id # service id
