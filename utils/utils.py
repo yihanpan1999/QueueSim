@@ -13,12 +13,15 @@ parser.add_argument('--ri',           type = float,   default = 0)
 parser.add_argument('--mc',                 type = int,   default = 100)         # NUMBER OF DAYS
 parser.add_argument('--seed',               type = int,   default = 123)        # RANDOM SEED
 parser.add_argument('--num_check',          type = int,   default = 2)          # NUMBER OF CHECK ITEMS
-parser.add_argument('--close_time',         type = int,   default = 6)          # ALLOWED TIME PERIOD FOR NEW PATIENTS (hrs)
+parser.add_argument('--close_time',         type = int,   default = 11)          # ALLOWED TIME PERIOD FOR NEW PATIENTS (hrs)
 parser.add_argument('--slot_time',          type = int,   default = 5)          # TIME DURATION (5 MINS) OF ONE SLOT (mins)
-parser.add_argument('--sim_end',            type = int,   default = 8*60)      # ONE DAY SERVICE TIME (mins)
+parser.add_argument('--sim_end',            type = int,   default = 11*60)      # ONE DAY SERVICE TIME (mins)
  
 parser.add_argument('--p_showup',           type = float, default = 0.5)        # 30/72 ALL SLOTS ARE OCCUPIRED BY SCHEDULED PEOPLE
-parser.add_argument('--walk_in_rate',       type = float, default = [2.92201835/60, 8.15596330/60, 7.71559633/60, 6.61467890/60, 2.98623953/60, 0.51834862/60])  # TIME-VARYING POISSON
+parser.add_argument('--walk_in_rate',       type = float, default = [2.92201835/60, 8.15596330/60, 7.71559633/60, 6.61467890/60, 2.98623953/60, 0.51834862/60,
+                                                                     3.00917431/60, 7.70642202/60, 4.78899083/60, 1.90825688/60, 0.08256881/60])  # TIME-VARYING POISSON
+#parser.add_argument('--walk_in_rate',       type = float, default = [2.761/60, 7.816/60, 7.316/60, 6.252/60, 2.743/60, 0.454/60,
+#                                                                     2.811/60, 7.146/60, 4.353/60, 1.706/60, 0.082/60])  # TIME-VARYING POISSON
 parser.add_argument('--arrival_rate_blood', type = float, default = 30/60)      # 30 PATIENTS / 60 MINUTES FOR EXTERNAL BLOOD TEST
 parser.add_argument('--arrival_rate_scan',  type = float, default = 20/60)      # 20 PATIENT  / 60 MINUTES FOR EXTERNAL SCAN TEST
 
