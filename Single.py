@@ -82,32 +82,32 @@ if __name__ == "__main__":
 # -------------------------------------------------------------------------
     
 # 分时段的 average waiting time 用这段代码 (hour=0代表7点，hour=10代表17点)
-#    mc = args.mc
-#    wait_byHour = []
-#
-#    # Run simulator
-#    for hour in range(11):
-#        waiting_time = []
-#        for i in range(100):
-#            sim = Simulation()
-#            sim.run()
-#            for patient in sim.all_patient:
-#                if 60*hour < patient.time[0][0] < 60*(hour+1):
-#                    waiting_time.append(patient.time[0][1]-patient.time[0][0])
-#        wait_byHour.append(np.mean(waiting_time))
-#
-#    # plot the figure
-#    empirical = [21.4580236381505, 16.340242148865443, 19.323295097701134,
-#                 19.622087877720812, 20.80573309448155, 52.91604257239057, 
-#                 36.17085924170742, 25.43721169116396, 21.41483412504384, 
-#                 10.093030293010619, 3.7732421296296303]
-#    hour = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
-#    print(wait_byHour)
-#    plt.plot(hour, wait_byHour)
-#    plt.plot(hour, empirical)
-#    plt.legend(["Simulation", "Empirical"], fontsize = 13, loc = "best")
-#    plt.title("mean waiting time", fontsize = 15)
-#    plt.show()    
+    mc = args.mc
+    wait_byHour = []
+
+    # Run simulator
+    for hour in range(11):
+        waiting_time = []
+        for i in range(100):
+            sim = Simulation()
+            sim.run()
+            for patient in sim.all_patient:
+                if 60*hour < patient.time[0][0] < 60*(hour+1):
+                    waiting_time.append(patient.time[0][1]-patient.time[0][0])
+        wait_byHour.append(np.mean(waiting_time))
+
+    # plot the figure
+    empirical = [21.4580236381505, 16.340242148865443, 19.323295097701134,
+                 19.622087877720812, 20.80573309448155, 52.91604257239057, 
+                 36.17085924170742, 25.43721169116396, 21.41483412504384, 
+                 10.093030293010619, 3.7732421296296303]
+    hour = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    print(wait_byHour)
+    plt.plot(hour, wait_byHour)
+    plt.plot(hour, empirical)
+    plt.legend(["Simulation", "Empirical"], fontsize = 13, loc = "best")
+    plt.title("mean waiting time", fontsize = 15)
+    plt.savefig("waiting.png")    
 #----------------------------------------------------------------------------
     
 # waiting time 的柱状图用这段代码 (只看小于60分钟的部分)
@@ -129,7 +129,7 @@ if __name__ == "__main__":
 #    X = [i for i in range(len(count))]    
 #    plt.bar(X, count, 1, color = "blue")
 #    plt.title("waiting time distribution", fontsize = 15)
-#    plt.show()
+#    plt.savefig("wait_dist.png")
 # -------------------------------------------------------------------------    
     
 # average queue length 的统计量用这段代码
@@ -151,29 +151,29 @@ if __name__ == "__main__":
 #-----------------------------------------------------------------------------
     
 # 分时段的 average queue length 用这段代码 (hour=0代表7点，hour=10代表17点)
-    mc = args.mc
-    avg_Qlen_byHour = []
-    
-    # Run simulator 
-    for hour in range(11):
-        avg_Qlen = []
-        for i in range(100):
-            waiting_time = []
-            sim = Simulation()
-            sim.run()
-            for patient in sim.all_patient:
-                if 60*hour < patient.time[0][0] < 60*(hour+1):
-                    waiting_time.append(min(60*(hour+1), patient.time[0][1])-patient.time[0][0])
-            avg_Qlen.append(sum(waiting_time)/60)
-        avg_Qlen_byHour.append(np.mean(avg_Qlen))
-
-    # plot the figure
-    empirical = [1.09, 2.95, 3.08, 3.08, 1.74, 0.51, 1.86, 4.13, 2.8, 1.19, 0.06]
-    hour = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
-    print(avg_Qlen_byHour)
-    plt.plot(hour, avg_Qlen_byHour)
-    plt.plot(hour, empirical)
-    plt.legend(["Simulation", "Empirical"], fontsize = 13, loc = "best")
-    plt.title("mean average queue length", fontsize = 15)
-    plt.show()
+#    mc = args.mc
+#    avg_Qlen_byHour = []
+#    
+#    # Run simulator 
+#    for hour in range(11):
+#        avg_Qlen = []
+#        for i in range(100):
+#            waiting_time = []
+#            sim = Simulation()
+#            sim.run()
+#            for patient in sim.all_patient:
+#                if 60*hour < patient.time[0][0] < 60*(hour+1):
+#                    waiting_time.append(min(60*(hour+1), patient.time[0][1])-patient.time[0][0])
+#            avg_Qlen.append(sum(waiting_time)/60)
+#        avg_Qlen_byHour.append(np.mean(avg_Qlen))
+#
+#    # plot the figure
+#    empirical = [1.09, 2.95, 3.08, 3.08, 1.74, 0.51, 1.86, 4.13, 2.8, 1.19, 0.06]
+#    hour = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+#    print(avg_Qlen_byHour)
+#    plt.plot(hour, avg_Qlen_byHour)
+#    plt.plot(hour, empirical)
+#    plt.legend(["Simulation", "Empirical"], fontsize = 13, loc = "best")
+#    plt.title("mean average queue length", fontsize = 15)
+#    plt.savefig("queue.png")
 #-----------------------------------------------------------------------------
