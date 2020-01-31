@@ -129,6 +129,7 @@ if __name__ == "__main__":
 #    X = [i for i in range(len(count))]    
 #    plt.bar(X, count, 1, color = "blue")
 #    plt.title("waiting time distribution", fontsize = 15)
+#    plt.show()
 # -------------------------------------------------------------------------    
     
 # average queue length 的统计量用这段代码
@@ -174,4 +175,5 @@ if __name__ == "__main__":
     plt.plot(hour, empirical)
     plt.legend(["Simulation", "Empirical"], fontsize = 13, loc = "best")
     plt.title("mean average queue length", fontsize = 15)
+    plt.show()
 #-----------------------------------------------------------------------------
